@@ -28,7 +28,6 @@
         .animate-shake { animation: shake 0.1s ease-in-out infinite; }
         .animate-glow-red { animation: glow-red 0.6s ease-in-out infinite; }
         
-        /* スマホのアドレスバーなどを考慮した高さ設定 */
         .dynamic-screen {
             min-height: 100vh;
             min-height: 100dvh;
@@ -40,11 +39,10 @@
 
         .chair-container {
             position: relative;
-            height: 18rem; /* 72 units */
+            height: 18rem;
             display: flex;
             align-items: center;
             justify-content: center;
-            /* 画面が小さい時に縮小するように調整 */
             max-width: 100%;
             transform: scale(min(1, 80vw / 300px));
         }
@@ -71,17 +69,21 @@
             transition: background-color 0.075s;
         }
         
-        /* スクロールを防止しつつ、コンテンツが溢れた場合のみスクロール可能に */
         html, body {
             overflow: hidden;
             height: 100%;
+        }
+
+        /* 入力フォームのスタイル */
+        input::placeholder {
+            color: rgba(255, 255, 255, 0.3);
         }
     </style>
 </head>
 <body class="bg-neutral-900 text-white flex flex-col items-center justify-center font-sans select-none body-electric-bg dynamic-screen" id="body-root">
 
     <div id="game-container" class="max-w-md w-full h-full max-h-[90dvh] overflow-y-auto rounded-3xl shadow-2xl p-6 sm:p-8 border relative transition-colors bg-neutral-800 border-neutral-700 flex flex-col justify-center">
-        <!-- コンテンツがJavaScriptによって動的に挿入されます -->
+        <!-- コンテンツはJavaScriptで挿入 -->
     </div>
 
     <script>
@@ -142,6 +144,16 @@
             render();
         }
 
+        function startGame() {
+            const p1Name = document.getElementById('p1-name').value.trim();
+            const p2Name = document.getElementById('p2-name').value.trim();
+            if (p1Name) players[0].name = p1Name;
+            if (p2Name) players[1].name = p2Name;
+            
+            gameState = 'SETTER_TURN';
+            render();
+        }
+
         function judge() {
             const sitterIndex = 1 - setterIndex;
             const isHit = selectedSit === selectedTrap;
@@ -151,7 +163,6 @@
                 players[sitterIndex].outs += 1;
                 lastResult = { success: false, points: 0, hitNum: selectedSit };
                 
-                // アウト時は3秒後に自動遷移
                 autoTransitionTimer = setTimeout(() => {
                     if (gameState === 'RESULT') checkGameOver();
                 }, 3000);
@@ -168,7 +179,6 @@
         function render() {
             const sitterIndex = 1 - setterIndex;
 
-            // 背景とコンテナのクラス制御（電流演出）
             if (gameState === 'RESULT' && !lastResult.success) {
                 bodyRoot.className = 'bg-neutral-900 flex flex-col items-center justify-center font-sans select-none animate-electric-bg dynamic-screen';
                 container.className = 'max-w-md w-full h-full max-h-[90dvh] overflow-y-auto rounded-3xl shadow-2xl p-6 sm:p-8 border relative bg-black/90 border-yellow-500 shadow-yellow-500/50 animate-shake flex flex-col justify-center';
@@ -179,23 +189,28 @@
 
             let html = '';
 
-            // ヘッダー表示
             if (gameState !== 'START' && gameState !== 'GAME_OVER') {
                 html += `
                 <div class="flex justify-between items-start mb-6 border-b border-neutral-700 pb-4">
-                    <div class="p-2 rounded-lg text-center ${setterIndex === 0 ? 'bg-red-900/40 text-red-400' : 'bg-blue-900/40 text-blue-400'}">
-                        <span class="text-[10px] block uppercase opacity-70">Setter</span>
-                        <span class="font-bold text-sm">${players[setterIndex].name}</span>
-                        ${renderOuts(players[setterIndex].outs)}
+                    <!-- 左側プレイヤー -->
+                    <div class="p-2 rounded-lg text-center min-w-[100px] ${setterIndex === 0 ? 'bg-red-900/40 text-red-400' : 'bg-blue-900/40 text-blue-400'}">
+                        <span class="text-[10px] block uppercase opacity-70">${setterIndex === 0 ? 'Setter' : 'Sitter'}</span>
+                        <span class="font-bold text-sm block truncate max-w-[80px] mx-auto">${players[0].name}</span>
+                        <div class="text-base font-mono font-bold mt-0.5">${players[0].score} pts</div>
+                        ${renderOuts(players[0].outs)}
                     </div>
+                    
                     <div class="text-center pt-2">
                         <span class="text-[10px] block opacity-70 uppercase tracking-tighter">Remaining</span>
                         <span class="text-lg font-mono">${availableChairs.length}</span>
                     </div>
-                    <div class="p-2 rounded-lg text-center ${sitterIndex === 0 ? 'bg-red-900/40 text-red-400' : 'bg-blue-900/40 text-blue-400'}">
-                        <span class="text-[10px] block uppercase opacity-70">Sitter</span>
-                        <span class="font-bold text-sm">${players[sitterIndex].name}</span>
-                        ${renderOuts(players[sitterIndex].outs)}
+                    
+                    <!-- 右側プレイヤー -->
+                    <div class="p-2 rounded-lg text-center min-w-[100px] ${sitterIndex === 0 ? 'bg-red-900/40 text-red-400' : 'bg-blue-900/40 text-blue-400'}">
+                        <span class="text-[10px] block uppercase opacity-70">${sitterIndex === 0 ? 'Setter' : 'Sitter'}</span>
+                        <span class="font-bold text-sm block truncate max-w-[80px] mx-auto">${players[1].name}</span>
+                        <div class="text-base font-mono font-bold mt-0.5">${players[1].score} pts</div>
+                        ${renderOuts(players[1].outs)}
                     </div>
                 </div>`;
             }
@@ -203,16 +218,30 @@
             switch(gameState) {
                 case 'START':
                     html = `
-                    <div class="text-center py-8">
-                        <div class="mb-6 flex justify-center">
+                    <div class="text-center py-4">
+                        <div class="mb-4 flex justify-center">
                             <div class="bg-yellow-500 p-4 rounded-full animate-pulse shadow-[0_0_30px_rgba(234,179,8,0.5)]">
                                 ${icons.zapLarge('text-neutral-900 fill-neutral-900')}
                             </div>
                         </div>
                         <p class="text-neutral-400 text-xs sm:text-sm mb-1 uppercase tracking-tighter">水曜日のダウンタウンでおなじみの</p>
-                        <h1 class="text-4xl font-black mb-2 tracking-tighter italic text-yellow-500 leading-none">電気イスゲーム</h1>
-                        <p class="text-neutral-400 mb-8 mt-4 text-sm">3アウトで即終了、もしくは<br><span class="text-white font-bold">${WINNING_SCORE}点先取</span>で勝利</p>
-                        <button onclick="gameState='SETTER_TURN'; render();" class="w-full sm:w-auto px-12 py-4 font-bold text-white bg-red-600 rounded-xl hover:bg-red-500 transition-all shadow-lg active:scale-95">GAME START</button>
+                        <h1 class="text-4xl font-black mb-6 tracking-tighter italic text-yellow-500 leading-none">電気イスゲーム</h1>
+                        
+                        <div class="space-y-3 mb-8 text-left max-w-[280px] mx-auto">
+                            <div>
+                                <label class="text-[10px] text-neutral-500 uppercase font-bold ml-1">Player 1 Name</label>
+                                <input type="text" id="p1-name" placeholder="プレイヤー1" maxlength="10"
+                                    class="w-full bg-neutral-900 border border-neutral-700 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-red-500 transition-colors">
+                            </div>
+                            <div>
+                                <label class="text-[10px] text-neutral-500 uppercase font-bold ml-1">Player 2 Name</label>
+                                <input type="text" id="p2-name" placeholder="プレイヤー2" maxlength="10"
+                                    class="w-full bg-neutral-900 border border-neutral-700 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-blue-500 transition-colors">
+                            </div>
+                        </div>
+
+                        <p class="text-neutral-400 mb-6 text-sm">3アウトで即終了、もしくは<br><span class="text-white font-bold">${WINNING_SCORE}点先取</span>で勝利</p>
+                        <button onclick="startGame()" class="w-full sm:w-auto px-12 py-4 font-bold text-white bg-red-600 rounded-xl hover:bg-red-500 transition-all shadow-lg active:scale-95">GAME START</button>
                     </div>`;
                     break;
 
@@ -254,7 +283,7 @@
                                     const isSelected = selectedSit === num;
                                     return `<button onclick="selectSit(${num})" ${!isAvailable ? 'disabled' : ''} style="${getChairStyle(num)}" 
                                         class="chair ${!isAvailable ? 'border-neutral-700 bg-neutral-900 text-neutral-700 cursor-not-allowed' : 
-                                        isSelected ? 'border-blue-500 bg-blue-600 text-white scale-125 z-10 shadow-lg shadow-blue-500/50' : 'border-neutral-600 hover:border-blue-400 text-neutral-400'} active:scale-110">
+                                        isSelected ? 'border-blue-500 bg-blue-600 text-white scale-125 z-10 shadow-lg shadow-blue-500/50' : 'border-neutral-600 hover:border-red-400 text-neutral-400'} active:scale-110">
                                         ${num}
                                     </button>`;
                                 }).join('')}
@@ -322,7 +351,7 @@
                             ${players.map((p, idx) => `
                                 <div class="flex justify-between items-center p-4 rounded-xl border-2 transition-opacity ${idx === setterIndex ? 'border-neutral-700 opacity-40' : 'border-neutral-500 bg-neutral-900/80 shadow-inner'}">
                                     <div class="text-left">
-                                        <span class="font-bold text-lg">${p.name}</span>
+                                        <span class="font-bold text-lg block truncate max-w-[120px]">${p.name}</span>
                                         ${renderOuts(p.outs)}
                                     </div>
                                     <div class="text-right">
@@ -362,7 +391,7 @@
                             ${players.map(p => `
                                 <div class="flex justify-between items-center p-4 rounded-xl bg-neutral-900 border ${p.outs >= 3 ? 'border-red-600 opacity-60' : 'border-neutral-700'}">
                                     <div class="text-left">
-                                        <span class="font-bold">${p.name}</span>
+                                        <span class="font-bold block truncate max-w-[120px]">${p.name}</span>
                                         ${renderOuts(p.outs)}
                                     </div>
                                     <span class="text-2xl font-mono font-bold text-white">${p.score} pts</span>
@@ -372,7 +401,7 @@
                         <div class="p-6 bg-yellow-500 p-1 rounded-2xl mb-8 shadow-[0_0_40px_rgba(234,179,8,0.3)]">
                             <div class="bg-neutral-900 rounded-xl py-4 px-2">
                                 <p class="text-yellow-500 text-xs mb-1 uppercase tracking-[0.3em]">Winner</p>
-                                <h3 class="text-3xl font-black text-white">${winnerName}</h3>
+                                <h3 class="text-3xl font-black text-white truncate px-2">${winnerName}</h3>
                             </div>
                         </div>
                         <button onclick="resetGame()" class="w-full py-4 rounded-xl bg-white text-black font-bold hover:bg-neutral-200 transition-colors active:scale-95">リベンジマッチ</button>
@@ -418,7 +447,6 @@
             render();
         }
 
-        // 初回起動
         render();
     </script>
 </body>
