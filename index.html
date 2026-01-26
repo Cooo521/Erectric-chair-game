@@ -2,853 +2,452 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Travel English Drill</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>電気椅子ゲーム</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600&family=Noto+Sans+JP:wght@400;700&display=swap');
-
-        body {
-            font-family: 'Noto Sans JP', 'Fredoka', sans-serif;
-            touch-action: manipulation;
-            background-color: #f0f9ff;
-            overflow: hidden; /* 背景アニメーションのはみ出し防止 */
+        @keyframes electric {
+            0%, 100% { opacity: 1; transform: scale(1); filter: brightness(1); }
+            50% { opacity: 0.7; transform: scale(1.1); filter: brightness(1.5) contrast(1.2); }
         }
-        .app-container {
-            height: 100dvh;
-            display: flex;
-            flex-direction: column;
+        @keyframes electric-bg {
+            0%, 100% { background-color: rgba(250, 204, 21, 1); }
+            50% { background-color: rgba(0, 0, 0, 1); }
+        }
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-8px); }
+            75% { transform: translateX(8px); }
+        }
+        @keyframes glow-red {
+            0%, 100% { box-shadow: 0 0 10px rgba(220, 38, 38, 0.5); border-color: #ef4444; }
+            50% { box-shadow: 0 0 30px rgba(220, 38, 38, 1); border-color: #f87171; }
+        }
+        .animate-electric { animation: electric 0.05s linear infinite; }
+        .animate-electric-bg { animation: electric-bg 0.1s step-end infinite; }
+        .animate-shake { animation: shake 0.1s ease-in-out infinite; }
+        .animate-glow-red { animation: glow-red 0.6s ease-in-out infinite; }
+        
+        .dynamic-screen {
+            min-height: 100vh;
+            min-height: 100dvh;
+            padding-top: env(safe-area-inset-top);
+            padding-bottom: env(safe-area-inset-bottom);
+            padding-left: env(safe-area-inset-left);
+            padding-right: env(safe-area-inset-right);
+        }
+
+        .chair-container {
             position: relative;
-            z-index: 10;
-        }
-
-        /* カラフルな背景装飾 */
-        .bg-orb {
-            position: fixed;
-            border-radius: 50%;
-            filter: blur(60px);
-            z-index: 0;
-            opacity: 0.6;
-            animation: float 20s infinite ease-in-out;
-        }
-        .orb-1 { top: -10%; left: -10%; width: 50vw; height: 50vw; background: #FF9A9E; animation-delay: 0s; }
-        .orb-2 { bottom: -10%; right: -10%; width: 60vw; height: 60vw; background: #a18cd1; animation-delay: -5s; }
-        .orb-3 { top: 40%; left: 40%; width: 40vw; height: 40vw; background: #fad0c4; animation-delay: -10s; }
-        
-        @keyframes float {
-            0%, 100% { transform: translate(0, 0) scale(1); }
-            33% { transform: translate(30px, -50px) scale(1.1); }
-            66% { transform: translate(-20px, 20px) scale(0.9); }
-        }
-
-        /* ロックモード */
-        #lockOverlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background-color: #000;
-            z-index: 9999;
-            display: none;
-            color: #4b5563;
-            flex-direction: column;
-            justify-content: center;
+            height: 18rem;
+            display: flex;
             align-items: center;
-            user-select: none;
+            justify-content: center;
+            max-width: 100%;
+            transform: scale(min(1, 80vw / 300px));
+        }
+        @media (max-height: 600px) {
+            .chair-container {
+                height: 14rem;
+                transform: scale(0.8);
+            }
         }
 
-        /* マイクのパルスアニメーション */
-        .pulse-mic {
-            animation: pulse-ring 2s cubic-bezier(0.215, 0.61, 0.355, 1) infinite;
+        .chair {
+            position: absolute;
+            width: 3rem;
+            height: 3rem;
+            border-radius: 9999px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s;
+            font-weight: bold;
+            border-width: 2px;
         }
-        @keyframes pulse-ring {
-            0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(255, 107, 107, 0.7); }
-            70% { transform: scale(1); box-shadow: 0 0 0 20px rgba(255, 107, 107, 0); }
-            100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(255, 107, 107, 0); }
-        }
-
-        /* カスタムレンジスライダー */
-        input[type=range] {
-            -webkit-appearance: none;
-            background: transparent;
-        }
-        input[type=range]::-webkit-slider-thumb {
-            -webkit-appearance: none;
-            height: 24px;
-            width: 24px;
-            border-radius: 50%;
-            background: #fff;
-            border: 4px solid #4facfe;
-            margin-top: -10px;
-            box-shadow: 0 2px 6px rgba(0,0,0,0.2);
-            transition: transform 0.1s;
-        }
-        input[type=range]:active::-webkit-slider-thumb {
-            transform: scale(1.2);
-        }
-        input[type=range]::-webkit-slider-runnable-track {
-            width: 100%;
-            height: 6px;
-            background: linear-gradient(to right, #4facfe 0%, #00f2fe 100%);
-            border-radius: 3px;
+        .body-electric-bg {
+            transition: background-color 0.075s;
         }
         
-        .no-scrollbar::-webkit-scrollbar { display: none; }
-        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
-
-        /* グラスモーフィズム強化 */
-        .glass-panel {
-            background: rgba(255, 255, 255, 0.75);
-            backdrop-filter: blur(16px);
-            -webkit-backdrop-filter: blur(16px);
-            border: 1px solid rgba(255, 255, 255, 0.8);
-            box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.1);
-        }
-        
-        .glass-btn {
-            background: rgba(255, 255, 255, 0.6);
-            backdrop-filter: blur(4px);
-            border: 1px solid rgba(255, 255, 255, 0.5);
-            transition: all 0.3s ease;
-        }
-        .glass-btn:active {
-            transform: scale(0.95);
+        html, body {
+            overflow: hidden;
+            height: 100%;
         }
 
-        /* テキストのグラデーション */
-        .text-gradient {
-            background: linear-gradient(45deg, #ff9a9e 0%, #fad0c4 99%, #fad0c4 100%);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-        }
-        .text-gradient-blue {
-            background: linear-gradient(120deg, #89f7fe 0%, #66a6ff 100%);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
+        /* 入力フォームのスタイル */
+        input::placeholder {
+            color: rgba(255, 255, 255, 0.3);
         }
     </style>
 </head>
-<body class="text-slate-700 bg-gray-50">
+<body class="bg-neutral-900 text-white flex flex-col items-center justify-center font-sans select-none body-electric-bg dynamic-screen" id="body-root">
 
-    <!-- 背景アニメーション -->
-    <div class="bg-orb orb-1"></div>
-    <div class="bg-orb orb-2"></div>
-    <div class="bg-orb orb-3"></div>
-
-    <div id="app" class="app-container relative overflow-hidden">
-        
-        <!-- ヘッダー -->
-        <header class="bg-white/60 backdrop-blur-md px-5 py-3 shadow-sm flex justify-between items-center z-20 sticky top-0 border-b border-white/40">
-            <h1 class="font-bold text-xl text-slate-700 flex items-center gap-2">
-                <div class="bg-gradient-to-tr from-blue-400 to-purple-500 text-white p-1.5 rounded-lg shadow-md">
-                    <i class="fas fa-plane text-sm"></i>
-                </div>
-                <span class="font-fredoka tracking-wide" style="font-family: 'Fredoka', sans-serif;">Travel Drill</span>
-            </h1>
-            <div class="flex gap-3">
-                <button onclick="app.toggleReviewMode()" id="reviewBtn" class="text-xs font-bold bg-white/80 text-rose-500 px-3 py-1.5 rounded-full hidden flex items-center gap-1 shadow-sm border border-rose-100 hover:bg-rose-50 transition-all">
-                    <i class="fas fa-history"></i>Review <span id="wrongCount" class="bg-rose-500 text-white px-1.5 rounded-full text-[10px]">0</span>
-                </button>
-                <button onclick="app.openSettings()" class="w-9 h-9 rounded-full bg-white/80 text-slate-500 hover:text-blue-500 hover:bg-white shadow-sm flex items-center justify-center transition-all">
-                    <i class="fas fa-cog"></i>
-                </button>
-            </div>
-        </header>
-
-        <!-- メイン学習画面 -->
-        <main id="mainScreen" class="flex-1 flex flex-col items-center justify-between p-6 pb-12 transition-opacity duration-300 overflow-y-auto">
-            
-            <!-- 進捗表示 -->
-            <div class="w-full max-w-md space-y-2 mt-2">
-                <div class="flex justify-between items-end px-1">
-                    <span id="progressText" class="text-sm font-bold text-slate-500 font-fredoka">Q. 1 / 200</span>
-                    <span id="modeBadge" class="text-[10px] font-bold px-3 py-1 rounded-full bg-gradient-to-r from-emerald-400 to-teal-400 text-white shadow-sm">通常モード</span>
-                </div>
-                <div class="h-2 w-full bg-white/50 rounded-full overflow-hidden shadow-inner">
-                    <div id="progressBar" class="h-full bg-gradient-to-r from-emerald-400 to-cyan-400 transition-all duration-500 ease-out shadow-[0_0_10px_rgba(52,211,153,0.5)]" style="width: 0.5%"></div>
-                </div>
-            </div>
-            
-            <!-- フレーズカード -->
-            <div class="w-full max-w-md my-4 relative group perspective-1000">
-                <div class="glass-panel rounded-[2rem] p-8 min-h-[260px] flex flex-col justify-center items-center text-center relative overflow-hidden transition-all duration-500 hover:scale-[1.02]">
-                    
-                    <!-- ステータスアイコン -->
-                    <div id="statusIndicator" class="absolute top-5 right-6 text-slate-300/80 transition-colors">
-                        <i class="fas fa-volume-high text-2xl"></i>
-                    </div>
-
-                    <!-- テキストエリア -->
-                    <div class="z-10 w-full space-y-8">
-                        <div>
-                            <p class="text-xs font-bold text-slate-400 mb-2 uppercase tracking-widest">Japanese</p>
-                            <h2 id="jpText" class="text-2xl md:text-3xl font-bold text-slate-800 leading-relaxed drop-shadow-sm">Let's Start!</h2>
-                        </div>
-                        
-                        <div class="relative min-h-[4rem] flex flex-col items-center justify-center bg-white/40 rounded-xl p-2 border border-white/60">
-                            <p class="text-xs font-bold text-blue-400 mb-1 uppercase tracking-widest absolute -top-3 bg-white px-2 rounded-full shadow-sm">English</p>
-                            <p id="enText" class="text-xl md:text-2xl font-bold text-blue-600 opacity-0 transition-all duration-500 transform translate-y-2" style="font-family: 'Fredoka', sans-serif;">Ready?</p>
-                        </div>
-                    </div>
-                    
-                    <!-- 判定結果オーバーレイ -->
-                    <div id="resultOverlay" class="absolute inset-0 flex items-center justify-center bg-white/80 backdrop-blur-sm hidden z-20 transition-all rounded-[2rem]">
-                        <div class="transform scale-0 transition-transform duration-300" id="resultIconContainer">
-                            <!-- アイコンはJSで制御 -->
-                            <i id="resultIcon" class="fas fa-check-circle text-8xl text-emerald-500 drop-shadow-xl"></i>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- コントロールエリア -->
-            <div class="w-full max-w-md flex flex-col items-center gap-6">
-                
-                <!-- マイクステータス -->
-                <div id="micStatus" class="h-10 flex items-center justify-center text-slate-500 text-sm font-bold gap-2 px-6 rounded-full glass-btn shadow-sm">
-                    <i class="fas fa-microphone-slash text-slate-400"></i> <span class="tracking-wide">待機中</span>
-                </div>
-
-                <!-- 再生ボタン -->
-                <div class="relative">
-                    <!-- 後ろの光るエフェクト -->
-                    <div class="absolute inset-0 bg-blue-400 rounded-full blur-xl opacity-30 animate-pulse"></div>
-                    <button id="playBtn" onclick="app.togglePlay()" class="relative w-24 h-24 flex items-center justify-center rounded-full bg-gradient-to-br from-blue-400 via-blue-500 to-indigo-600 text-white shadow-xl hover:shadow-blue-400/50 hover:scale-105 active:scale-95 transition-all duration-300 z-10 border-4 border-white/30">
-                        <i class="fas fa-play text-4xl ml-2 drop-shadow-md"></i>
-                    </button>
-                </div>
-
-                <!-- スピードバロメータ -->
-                <div class="w-full glass-panel rounded-2xl p-4">
-                    <div class="flex justify-between items-center mb-3 text-xs font-bold text-slate-500 uppercase tracking-wider">
-                        <span><i class="fas fa-tachometer-alt mr-1"></i>Speed</span>
-                        <span id="speedDisplay" class="bg-blue-100 text-blue-600 px-2 py-0.5 rounded-md">x1.0</span>
-                    </div>
-                    <div class="flex items-center gap-4 text-slate-400">
-                        <i class="fas fa-turtle text-lg text-emerald-400"></i>
-                        <input type="range" id="rateRange" min="0.5" max="1.5" step="0.1" value="1.0" class="flex-1 h-2 rounded-lg cursor-pointer">
-                        <i class="fas fa-rabbit text-xl text-rose-400"></i>
-                    </div>
-                </div>
-
-                <!-- ロックボタン -->
-                <button onclick="app.activateLockMode()" class="w-full py-3.5 rounded-2xl text-slate-500 text-sm font-bold bg-white/50 hover:bg-white/80 transition-colors flex items-center justify-center gap-2 border border-white/60 shadow-sm">
-                    <i class="fas fa-lock text-slate-400"></i> ポケットに入れる (画面ロック)
-                </button>
-            </div>
-        </main>
-
-        <!-- 復習リスト画面 (スライドイン) -->
-        <div id="reviewScreen" class="absolute inset-0 bg-slate-50/95 backdrop-blur-xl z-30 transform translate-x-full transition-transform duration-300 flex flex-col">
-            <div class="bg-white/80 p-4 shadow-sm flex items-center justify-between sticky top-0 z-10 border-b">
-                <h2 class="font-bold text-lg text-rose-500 flex items-center gap-2">
-                    <div class="bg-rose-100 p-1.5 rounded-md"><i class="fas fa-book-open"></i></div> 復習リスト
-                </h2>
-                <button onclick="app.closeReviewMode()" class="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-slate-500 hover:bg-slate-200">
-                    <i class="fas fa-times"></i>
-                </button>
-            </div>
-            
-            <div class="p-4 bg-rose-50 text-rose-800 text-sm flex justify-between items-center border-b border-rose-100">
-                <span class="font-bold"><i class="fas fa-fire mr-1"></i>苦手を克服しよう！</span>
-                <button onclick="app.startReview()" class="bg-gradient-to-r from-rose-400 to-orange-400 text-white px-5 py-2 rounded-full shadow-lg shadow-rose-200 text-sm font-bold hover:scale-105 active:scale-95 transition-all">
-                    START
-                </button>
-            </div>
-
-            <div id="reviewList" class="flex-1 overflow-y-auto p-4 space-y-3 no-scrollbar pb-24">
-                <!-- リストはJSで生成 -->
-            </div>
-            
-            <div class="p-4 bg-white/90 border-t border-slate-100 absolute bottom-0 w-full backdrop-blur">
-                <button onclick="app.clearWrongData()" class="w-full py-3 text-slate-400 border border-dashed border-slate-300 hover:border-red-300 hover:text-red-400 rounded-xl font-bold transition-colors text-sm">
-                    <i class="fas fa-trash-alt mr-2"></i>履歴を消去
-                </button>
-            </div>
-        </div>
-
-        <!-- 設定モーダル -->
-        <div id="settingsModal" class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 hidden flex items-center justify-center opacity-0 transition-opacity duration-300">
-            <div class="bg-white/90 backdrop-blur rounded-3xl p-6 w-11/12 max-w-sm shadow-2xl transform scale-95 transition-transform duration-300 border border-white/50" id="settingsContent">
-                <div class="flex justify-between items-center mb-6">
-                    <h3 class="text-xl font-bold text-slate-700 font-fredoka">Settings</h3>
-                    <button onclick="app.closeSettings()" class="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-slate-400 hover:text-slate-600"><i class="fas fa-times"></i></button>
-                </div>
-                
-                <div class="space-y-6">
-                    <!-- 間隔設定 -->
-                    <div>
-                        <label class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2"><i class="fas fa-hourglass-half mr-1"></i>回答までの間隔</label>
-                        <div class="flex gap-2 bg-slate-100 p-1.5 rounded-2xl">
-                            <button onclick="app.setWaitTime(1000)" class="wait-btn flex-1 py-3 rounded-xl text-sm font-bold transition-all" data-val="1000">1秒</button>
-                            <button onclick="app.setWaitTime(2000)" class="wait-btn flex-1 py-3 rounded-xl text-sm font-bold transition-all" data-val="2000">2秒</button>
-                            <button onclick="app.setWaitTime(3000)" class="wait-btn flex-1 py-3 rounded-xl text-sm font-bold transition-all" data-val="3000">3秒</button>
-                        </div>
-                    </div>
-
-                    <!-- 判定モード -->
-                    <div>
-                        <label class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2"><i class="fas fa-toggle-on mr-1"></i>進行モード</label>
-                        <div class="relative">
-                            <select id="judgeMode" class="w-full p-4 pl-10 border-0 bg-slate-100 rounded-2xl text-slate-700 font-bold appearance-none focus:ring-2 focus:ring-blue-400 transition-shadow">
-                                <option value="voice">音声判定 (「ヤ」で正解)</option>
-                                <option value="auto">自動進行 (聞き流し)</option>
-                            </select>
-                            <i class="fas fa-microphone-alt absolute left-4 top-4 text-blue-400 text-lg"></i>
-                            <i class="fas fa-chevron-down absolute right-4 top-4.5 text-slate-400 text-sm"></i>
-                        </div>
-                        <p class="text-xs text-slate-400 mt-2 px-1 text-center">※電車内などは「自動進行」が便利です</p>
-                    </div>
-                </div>
-
-                <button onclick="app.closeSettings()" class="mt-8 w-full bg-slate-800 text-white py-4 rounded-2xl font-bold hover:bg-slate-900 shadow-lg active:scale-95 transition-all">
-                    OK
-                </button>
-            </div>
-        </div>
-
-        <!-- ロック画面オーバーレイ -->
-        <div id="lockOverlay">
-            <div class="text-center p-8">
-                <div class="mb-8 relative inline-block">
-                    <div class="absolute inset-0 bg-blue-500 blur-2xl opacity-20 rounded-full animate-pulse"></div>
-                    <i class="fas fa-moon text-6xl text-slate-700 relative z-10"></i>
-                </div>
-                <h3 class="text-2xl font-bold text-slate-500 mb-2 font-fredoka">Sleep Mode</h3>
-                <p class="text-slate-500 text-sm mb-12 opacity-80">画面OFF・タッチ無効化中...<br>音声学習は続いています</p>
-                
-                <div class="w-64 h-24 border-2 border-dashed border-slate-800 rounded-2xl flex items-center justify-center opacity-30 mx-auto animate-pulse">
-                    <p class="text-xs font-bold tracking-widest uppercase">Double Tap to Unlock</p>
-                </div>
-            </div>
-        </div>
-
+    <div id="game-container" class="max-w-md w-full h-full max-h-[90dvh] overflow-y-auto rounded-3xl shadow-2xl p-6 sm:p-8 border relative transition-colors bg-neutral-800 border-neutral-700 flex flex-col justify-center">
+        <!-- コンテンツはJavaScriptで挿入 -->
     </div>
 
-<script>
-// --- データセット ---
-const phraseCategories = [
-    { cat: "機内・空港", phrases: [
-        ["毛布をいただけますか？", "Can I have a blanket?"],
-        ["鶏肉と牛肉、どちらにしますか？", "Chicken or beef?"],
-        ["オレンジジュースをお願いします。", "Orange juice, please."],
-        ["乗り継ぎ便に遅れそうです。", "I might miss my connecting flight."],
-        ["手荷物受取所はどこですか？", "Where is the baggage claim?"],
-        ["このバッグを機内に持ち込めますか？", "Can I carry this bag on board?"],
-        ["通路側の席をお願いします。", "Aisle seat, please."],
-        ["窓側の席をお願いします。", "Window seat, please."],
-        ["私の席はどこですか？", "Where is my seat?"],
-        ["入国カードの書き方がわかりません。", "I don't know how to fill out this card."]
-    ]},
-    { cat: "交通", phrases: [
-        ["市街地へはどう行けばいいですか？", "How do I get to the city center?"],
-        ["この電車はロンドン行きですか？", "Does this train go to London?"],
-        ["切符はどこで買えますか？", "Where can I buy a ticket?"],
-        ["ここで降ろしてください。", "Let me off here, please."],
-        ["駅までどのくらいかかりますか？", "How long does it take to the station?"],
-        ["タクシーを呼んでいただけますか？", "Could you call a taxi for me?"],
-        ["このバスは博物館に停まりますか？", "Does this bus stop at the museum?"],
-        ["地図を描いてもらえますか？", "Could you draw me a map?"],
-        ["一番近い地下鉄の駅はどこですか？", "Where is the nearest subway station?"],
-        ["運賃はいくらですか？", "How much is the fare?"]
-    ]},
-    { cat: "ホテル", phrases: [
-        ["チェックインをお願いします。", "Check in, please."],
-        ["予約しています。", "I have a reservation."],
-        ["朝食は何時ですか？", "What time is breakfast?"],
-        ["Wi-Fiのパスワードは何ですか？", "What is the Wi-Fi password?"],
-        ["お湯が出ません。", "There is no hot water."],
-        ["荷物を預かってもらえますか？", "Could you keep my baggage?"],
-        ["もっとタオルをいただけますか？", "Can I have more towels?"],
-        ["部屋がうるさすぎます。", "My room is too noisy."],
-        ["チェックアウトは何時ですか？", "What time is checkout?"],
-        ["レイトチェックアウトは可能ですか？", "Is late checkout possible?"]
-    ]},
-    { cat: "レストラン", phrases: [
-        ["2名です。", "Table for two, please."],
-        ["メニューを見せてもらえますか？", "Can I see the menu?"],
-        ["注文をお願いします。", "I'm ready to order."],
-        ["これをお願いします。", "I'll have this one."],
-        ["水をお願いします。", "Water, please."],
-        ["おすすめは何ですか？", "What do you recommend?"],
-        ["アレルギーがあります。", "I have allergies."],
-        ["辛くしないでください。", "Not too spicy, please."],
-        ["お会計をお願いします。", "Check, please."],
-        ["クレジットカードは使えますか？", "Do you accept credit cards?"]
-    ]},
-    { cat: "ショッピング", phrases: [
-        ["これを見てもいいですか？", "Can I look at this?"],
-        ["試着してもいいですか？", "Can I try it on?"],
-        ["いくらですか？", "How much is it?"],
-        ["少し高いですね。", "It's a little expensive."],
-        ["まけてもらえませんか？", "Can you give me a discount?"],
-        ["これの違う色はありますか？", "Do you have this in a different color?"],
-        ["これのLサイズはありますか？", "Do you have this in a large size?"],
-        ["贈り物用です。", "It's for a gift."],
-        ["袋をもらえますか？", "Can I have a bag?"],
-        ["ただ見ているだけです。", "I'm just looking."]
-    ]},
-    { cat: "観光・街歩き", phrases: [
-        ["写真を撮ってもらえますか？", "Could you take a picture of us?"],
-        ["トイレはどこですか？", "Where is the restroom?"],
-        ["入場料はいくらですか？", "How much is the admission fee?"],
-        ["何時に閉まりますか？", "What time do you close?"],
-        ["チケットは完売ですか？", "Are tickets sold out?"],
-        ["ここへの行き方を教えてください。", "Could you tell me how to get here?"],
-        ["歩いて行けますか？", "Can I go there on foot?"],
-        ["おすすめの観光スポットはありますか？", "Are there any recommended tourist spots?"],
-        ["並んでいますか？", "Are you in line?"],
-        ["道に迷いました。", "I'm lost."]
-    ]},
-    { cat: "緊急・トラブル", phrases: [
-        ["助けて！", "Help!"],
-        ["警察を呼んでください。", "Call the police."],
-        ["救急車を呼んでください。", "Call an ambulance."],
-        ["パスポートをなくしました。", "I lost my passport."],
-        ["財布を盗まれました。", "My wallet was stolen."],
-        ["気分が悪いです。", "I feel sick."],
-        ["頭が痛いです。", "I have a headache."],
-        ["病院はどこですか？", "Where is the hospital?"],
-        ["日本語を話せる人はいますか？", "Does anyone speak Japanese?"],
-        ["日本大使館に連絡したいです。", "I want to contact the Japanese Embassy."]
-    ]}
-];
+    <script>
+        // --- 状態管理 ---
+        let gameState = 'START';
+        let players = [
+            { id: 1, name: 'プレイヤー1', score: 0, outs: 0 },
+            { id: 2, name: 'プレイヤー2', score: 0, outs: 0 },
+        ];
+        let setterIndex = 0;
+        let availableChairs = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12];
+        let selectedTrap = null;
+        let selectedSit = null;
+        let lastResult = null;
+        let autoTransitionTimer = null;
+        const WINNING_SCORE = 40;
 
-// データ生成
-let masterPhrases = [];
-phraseCategories.forEach(cat => {
-    cat.phrases.forEach(p => masterPhrases.push({ jp: p[0], en: p[1], category: cat.cat }));
-});
-while(masterPhrases.length < 200) {
-    masterPhrases = masterPhrases.concat(masterPhrases.slice(0, 200 - masterPhrases.length));
-}
+        const container = document.getElementById('game-container');
+        const bodyRoot = document.getElementById('body-root');
 
-// --- App Class ---
-
-class LearningApp {
-    constructor() {
-        this.phrases = [...masterPhrases];
-        this.wrongPhrases = JSON.parse(localStorage.getItem('wrongPhrases')) || [];
-        this.currentIndex = 0;
-        this.isPlaying = false;
-        this.isReviewMode = false;
-        this.wakeLock = null;
-        
-        // Settings
-        this.settings = {
-            rate: 1.0,
-            waitTime: 2000,
-            mode: 'voice'
+        // --- アイコン (SVG) ---
+        const icons = {
+            zap: (colorClass) => `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="${colorClass}"><path d="M13 2 3 14h9l-1 8 10-12h-9l1-8z"/></svg>`,
+            zapLarge: (colorClass) => `<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="${colorClass}"><path d="M13 2 3 14h9l-1 8 10-12h-9l1-8z"/></svg>`,
+            power: () => `<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v10"/><path d="M18.4 6.6a9 9 0 1 1-12.8 0"/></svg>`,
+            trophy: () => `<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"/></svg>`,
+            user: () => `<svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>`,
+            rotate: () => `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/></svg>`
         };
 
-        // TTS & Recognition
-        this.synth = window.speechSynthesis;
-        this.jpVoice = null;
-        this.enVoice = null;
-        this.recognition = null;
-        this.initRecognition();
-
-        // UI References
-        this.ui = {
-            jpText: document.getElementById('jpText'),
-            enText: document.getElementById('enText'),
-            playBtn: document.getElementById('playBtn'),
-            micStatus: document.getElementById('micStatus'),
-            resultOverlay: document.getElementById('resultOverlay'),
-            resultIcon: document.getElementById('resultIcon'),
-            resultIconContainer: document.getElementById('resultIconContainer'),
-            progressText: document.getElementById('progressText'),
-            progressBar: document.getElementById('progressBar'),
-            wrongCount: document.getElementById('wrongCount'),
-            reviewBtn: document.getElementById('reviewBtn'),
-            rateRange: document.getElementById('rateRange'),
-            speedDisplay: document.getElementById('speedDisplay'),
-            modeBadge: document.getElementById('modeBadge')
-        };
-
-        this.updateWrongCount();
-        this.updateProgress();
-        
-        // Load Voices
-        this.loadVoices();
-        if (speechSynthesis.onvoiceschanged !== undefined) {
-            speechSynthesis.onvoiceschanged = () => this.loadVoices();
-        }
-
-        // Initialize Settings UI
-        this.setWaitTime(2000); 
-
-        // Event Listeners
-        this.ui.rateRange.addEventListener('input', (e) => {
-            this.settings.rate = parseFloat(e.target.value);
-            this.ui.speedDisplay.textContent = `x${this.settings.rate.toFixed(1)}`;
-        });
-
-        document.getElementById('judgeMode').addEventListener('change', (e) => {
-            this.settings.mode = e.target.value;
-        });
-
-        // Unlock gestures
-        let lastTap = 0;
-        document.getElementById('lockOverlay').addEventListener('touchstart', (e) => {
-            const currentTime = new Date().getTime();
-            const tapLength = currentTime - lastTap;
-            if (tapLength < 500 && tapLength > 0) {
-                this.deactivateLockMode();
-                e.preventDefault();
+        // --- ヘルパー関数 ---
+        function renderOuts(count) {
+            let html = '<div class="flex gap-1 mt-1 justify-center">';
+            for (let i = 0; i < 3; i++) {
+                const color = i < count ? 'text-yellow-400 fill-yellow-400' : 'text-neutral-600';
+                html += icons.zap(color);
             }
-            lastTap = currentTime;
-        });
-        document.getElementById('lockOverlay').addEventListener('dblclick', () => {
-            this.deactivateLockMode();
-        });
-    }
-
-    initRecognition() {
-        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-        if (SpeechRecognition) {
-            this.recognition = new SpeechRecognition();
-            this.recognition.lang = 'en-US'; 
-            this.recognition.continuous = false;
-            this.recognition.interimResults = false;
-            this.recognition.maxAlternatives = 1;
-        } else {
-            console.warn("Speech Recognition not supported");
-            this.settings.mode = 'auto';
-        }
-    }
-
-    loadVoices() {
-        const voices = this.synth.getVoices();
-        if (voices.length === 0) return;
-        this.jpVoice = voices.find(v => v.lang === 'ja-JP' && v.name.includes('Google')) || voices.find(v => v.lang === 'ja-JP');
-        this.enVoice = voices.find(v => v.lang === 'en-US' && v.name.includes('Google')) || voices.find(v => v.lang === 'en-US');
-    }
-
-    togglePlay() {
-        if (this.isPlaying) {
-            this.stop();
-        } else {
-            this.play();
-        }
-    }
-
-    stop() {
-        this.isPlaying = false;
-        this.synth.cancel();
-        if(this.recognition) {
-            try { this.recognition.stop(); } catch(e){}
-        }
-        clearTimeout(this.loopTimeout);
-        
-        // Stop UI
-        const btnContent = `<i class="fas fa-play text-4xl ml-2 drop-shadow-md"></i>`;
-        this.ui.playBtn.innerHTML = btnContent;
-        this.ui.playBtn.classList.remove('from-rose-400', 'via-rose-500', 'to-orange-500', 'animate-pulse');
-        this.ui.playBtn.classList.add('from-blue-400', 'via-blue-500', 'to-indigo-600');
-        
-        this.ui.micStatus.innerHTML = '<i class="fas fa-microphone-slash text-slate-400"></i> <span class="tracking-wide">待機中</span>';
-        this.ui.micStatus.classList.remove('bg-rose-100', 'text-rose-600', 'border-rose-200', 'pulse-mic');
-        this.ui.micStatus.classList.add('text-slate-500');
-    }
-
-    async play() {
-        if (this.phrases.length === 0) return;
-        
-        this.synth.cancel();
-        this.isPlaying = true;
-
-        // Play UI
-        const btnContent = `<i class="fas fa-stop text-4xl drop-shadow-md"></i>`;
-        this.ui.playBtn.innerHTML = btnContent;
-        this.ui.playBtn.classList.remove('from-blue-400', 'via-blue-500', 'to-indigo-600');
-        this.ui.playBtn.classList.add('from-rose-400', 'via-rose-500', 'to-orange-500');
-
-        await this.requestWakeLock();
-        this.loopSequence();
-    }
-
-    async loopSequence() {
-        if (!this.isPlaying) return;
-
-        // Reset UI
-        this.ui.enText.style.opacity = '0';
-        this.ui.enText.classList.remove('translate-y-0');
-        this.ui.enText.classList.add('translate-y-2');
-        
-        this.ui.resultOverlay.classList.add('hidden');
-        this.ui.resultIconContainer.classList.remove('scale-100');
-        this.ui.resultIconContainer.classList.add('scale-0');
-        
-        const currentList = this.isReviewMode ? this.wrongPhrases : this.phrases;
-        
-        if (this.currentIndex >= currentList.length) {
-            this.currentIndex = 0;
-            if(this.isReviewMode) {
-                alert("復習完了！Great Job!");
-                this.stop();
-                return;
-            }
+            html += '</div>';
+            return html;
         }
 
-        const item = currentList[this.currentIndex];
-        
-        this.ui.jpText.textContent = item.jp;
-        this.ui.enText.textContent = item.en;
-        this.ui.progressText.textContent = `Q. ${this.currentIndex + 1} / ${currentList.length}`;
-        this.updateProgress(currentList.length);
-
-        // 1. Japanese
-        await this.speak(item.jp, 'ja');
-        
-        if (!this.isPlaying) return;
-
-        // 2. Wait
-        await this.wait(this.settings.waitTime);
-
-        if (!this.isPlaying) return;
-
-        // 3. English
-        this.ui.enText.style.opacity = '1';
-        this.ui.enText.classList.remove('translate-y-2');
-        this.ui.enText.classList.add('translate-y-0');
-        
-        await this.speak(item.en, 'en');
-
-        if (!this.isPlaying) return;
-
-        // 4. Judge
-        if (this.settings.mode === 'voice' && this.recognition) {
-            await this.listenForAnswer(item);
-        } else {
-            await this.wait(1500); 
-            this.next();
+        function getChairStyle(num) {
+            const angle = (num * 30 - 90) * (Math.PI / 180);
+            const radius = 120;
+            const x = Math.cos(angle) * radius;
+            const y = Math.sin(angle) * radius;
+            return `transform: translate(${x}px, ${y}px);`;
         }
-    }
 
-    updateProgress(total = 200) {
-        const percent = ((this.currentIndex + 1) / total) * 100;
-        this.ui.progressBar.style.width = `${percent}%`;
-    }
+        // --- アクション ---
+        function setTrap(num) {
+            selectedTrap = num;
+            render();
+        }
 
-    speak(text, lang) {
-        return new Promise((resolve) => {
-            if (!this.isPlaying) { resolve(); return; }
-            if (!this.jpVoice || !this.enVoice) this.loadVoices();
+        function selectSit(num) {
+            selectedSit = num;
+            render();
+        }
 
-            const utter = new SpeechSynthesisUtterance(text);
-            const targetVoice = lang === 'ja' ? this.jpVoice : this.enVoice;
-
-            if (targetVoice) utter.voice = targetVoice;
-            else utter.lang = lang === 'ja' ? 'ja-JP' : 'en-US';
+        function startGame() {
+            const p1Name = document.getElementById('p1-name').value.trim();
+            const p2Name = document.getElementById('p2-name').value.trim();
+            if (p1Name) players[0].name = p1Name;
+            if (p2Name) players[1].name = p2Name;
             
-            utter.rate = this.settings.rate;
+            gameState = 'SETTER_TURN';
+            render();
+        }
+
+        function judge() {
+            const sitterIndex = 1 - setterIndex;
+            const isHit = selectedSit === selectedTrap;
             
-            utter.onend = () => resolve();
-            utter.onerror = (e) => {
-                console.warn("Speech playback error:", e);
-                resolve();
-            };
-            try { this.synth.speak(utter); } catch (e) { resolve(); }
-        });
-    }
-
-    wait(ms) {
-        return new Promise(resolve => {
-            this.loopTimeout = setTimeout(resolve, ms);
-        });
-    }
-
-    listenForAnswer(currentItem) {
-        return new Promise((resolve) => {
-            this.ui.micStatus.innerHTML = '<i class="fas fa-microphone text-rose-500"></i> <span class="font-bold text-rose-600">Listen...</span>';
-            this.ui.micStatus.classList.remove('text-slate-500');
-            this.ui.micStatus.classList.add('bg-rose-100', 'border-rose-200', 'pulse-mic');
-            
-            let answered = false;
-            try { this.recognition.start(); } catch(e) {}
-
-            const finish = (isCorrect) => {
-                answered = true;
-                this.cleanupRecognition(null, null, null); // handlers cleared inside
-                if(isCorrect) this.handleCorrect();
-                else this.handleWrong(currentItem);
-                resolve();
-            }
-
-            const resultHandler = (event) => finish(true);
-            const errorHandler = (e) => console.warn("Recog error", e);
-
-            this.recognition.onresult = resultHandler;
-            this.recognition.onerror = errorHandler;
-
-            // Timeout 2s
-            this.loopTimeout = setTimeout(() => {
-                try { this.recognition.stop(); } catch(e){}
-                if (!answered) finish(false);
-            }, 2000);
-        });
-    }
-
-    cleanupRecognition(resFn, endFn, errFn) {
-        if(!this.recognition) return;
-        this.recognition.onresult = null;
-        this.recognition.onend = null;
-        this.recognition.onerror = null;
-    }
-
-    handleCorrect() {
-        this.showFeedback(true);
-        setTimeout(() => this.next(), 1200);
-    }
-
-    handleWrong(item) {
-        this.showFeedback(false);
-        if (!this.wrongPhrases.some(p => p.en === item.en)) {
-            this.wrongPhrases.push(item);
-            localStorage.setItem('wrongPhrases', JSON.stringify(this.wrongPhrases));
-            this.updateWrongCount();
-        }
-        setTimeout(() => this.next(), 1200);
-    }
-
-    showFeedback(isCorrect) {
-        this.ui.micStatus.classList.remove('pulse-mic', 'bg-rose-100', 'border-rose-200');
-        this.ui.micStatus.classList.add('text-slate-500');
-        this.ui.micStatus.innerHTML = isCorrect 
-            ? '<i class="fas fa-check text-emerald-500"></i> OK!' 
-            : '<i class="fas fa-times text-rose-500"></i> Time Up';
-        
-        this.ui.resultOverlay.classList.remove('hidden');
-        
-        // Icon change
-        const icon = this.ui.resultIcon;
-        if(isCorrect) {
-            icon.className = "fas fa-check-circle text-8xl text-emerald-400 drop-shadow-xl animate-bounce";
-        } else {
-            icon.className = "fas fa-times-circle text-8xl text-rose-400 drop-shadow-xl";
-        }
-
-        // Pop Animation
-        setTimeout(() => {
-            this.ui.resultIconContainer.classList.remove('scale-0');
-            this.ui.resultIconContainer.classList.add('scale-100');
-        }, 50);
-    }
-
-    next() {
-        this.currentIndex++;
-        this.loopSequence();
-    }
-
-    async requestWakeLock() {
-        if ('wakeLock' in navigator) {
-            try { this.wakeLock = await navigator.wakeLock.request('screen'); }
-            catch (err) { console.warn("Wake Lock fail:", err); }
-        }
-    }
-
-    // UI Helpers
-    activateLockMode() {
-        document.getElementById('lockOverlay').style.display = 'flex';
-    }
-    deactivateLockMode() {
-        document.getElementById('lockOverlay').style.display = 'none';
-    }
-    toggleReviewMode() {
-        document.getElementById('reviewScreen').classList.remove('translate-x-full');
-        this.renderReviewList();
-    }
-    closeReviewMode() {
-        document.getElementById('reviewScreen').classList.add('translate-x-full');
-    }
-    renderReviewList() {
-        const list = document.getElementById('reviewList');
-        list.innerHTML = '';
-        if (this.wrongPhrases.length === 0) {
-            list.innerHTML = `
-                <div class="flex flex-col items-center justify-center h-48 text-slate-300">
-                    <i class="fas fa-trophy text-6xl mb-4 text-yellow-300 drop-shadow-sm"></i>
-                    <p class="font-bold">Perfect!</p>
-                    <p class="text-xs">復習リストは空です</p>
-                </div>`;
-            return;
-        }
-        this.wrongPhrases.forEach((item) => {
-            const div = document.createElement('div');
-            div.className = 'bg-white p-4 rounded-2xl shadow-sm border border-slate-100 flex flex-col gap-1 relative overflow-hidden';
-            div.innerHTML = `
-                <div class="absolute left-0 top-0 bottom-0 w-1.5 bg-rose-400"></div>
-                <div class="font-bold text-slate-700 pl-2">${item.jp}</div>
-                <div class="text-blue-500 font-bold text-sm pl-2 font-fredoka">${item.en}</div>
-            `;
-            list.appendChild(div);
-        });
-    }
-    startReview() {
-        if (this.wrongPhrases.length === 0) {
-            alert("復習する項目がありません");
-            return;
-        }
-        this.isReviewMode = true;
-        this.currentIndex = 0;
-        this.ui.modeBadge.textContent = "復習モード";
-        this.ui.modeBadge.className = "text-[10px] font-bold px-3 py-1 rounded-full bg-rose-500 text-white shadow-sm";
-        this.closeReviewMode();
-        this.play();
-    }
-    clearWrongData() {
-        if(confirm('復習リストをリセットしますか？')) {
-            this.wrongPhrases = [];
-            localStorage.removeItem('wrongPhrases');
-            this.updateWrongCount();
-            this.renderReviewList();
-            if(this.isReviewMode) {
-                this.stop();
-                this.isReviewMode = false;
-                this.ui.modeBadge.textContent = "通常モード";
-                this.ui.modeBadge.className = "text-[10px] font-bold px-3 py-1 rounded-full bg-gradient-to-r from-emerald-400 to-teal-400 text-white shadow-sm";
-            }
-        }
-    }
-    updateWrongCount() {
-        const count = this.wrongPhrases.length;
-        this.ui.wrongCount.textContent = count;
-        if(count > 0) this.ui.reviewBtn.classList.remove('hidden');
-        else this.ui.reviewBtn.classList.add('hidden');
-    }
-    openSettings() {
-        const modal = document.getElementById('settingsModal');
-        const content = document.getElementById('settingsContent');
-        modal.classList.remove('hidden');
-        // Animation frame
-        requestAnimationFrame(() => {
-            modal.classList.remove('opacity-0');
-            content.classList.remove('scale-95');
-        });
-    }
-    closeSettings() {
-        const modal = document.getElementById('settingsModal');
-        const content = document.getElementById('settingsContent');
-        modal.classList.add('opacity-0');
-        content.classList.add('scale-95');
-        setTimeout(() => modal.classList.add('hidden'), 300);
-    }
-    setWaitTime(ms) {
-        this.settings.waitTime = ms;
-        document.querySelectorAll('.wait-btn').forEach(btn => {
-            if(parseInt(btn.dataset.val) === ms) {
-                btn.className = "wait-btn flex-1 py-3 rounded-xl text-sm font-bold transition-all bg-gradient-to-r from-blue-400 to-blue-500 text-white shadow-lg transform scale-105";
+            if (isHit) {
+                players[sitterIndex].score = 0;
+                players[sitterIndex].outs += 1;
+                lastResult = { success: false, points: 0, hitNum: selectedSit };
+                
+                autoTransitionTimer = setTimeout(() => {
+                    if (gameState === 'RESULT') checkGameOver();
+                }, 3000);
             } else {
-                btn.className = "wait-btn flex-1 py-3 rounded-xl text-sm font-bold transition-all bg-white text-slate-400 hover:bg-slate-50";
+                players[sitterIndex].score += selectedSit;
+                lastResult = { success: true, points: selectedSit, hitNum: selectedSit };
+                availableChairs = availableChairs.filter(c => c !== selectedSit);
             }
-        });
-    }
-}
+            gameState = 'RESULT';
+            render();
+        }
 
-const app = new LearningApp();
-</script>
+        // --- レンダリングエンジン ---
+        function render() {
+            const sitterIndex = 1 - setterIndex;
+
+            if (gameState === 'RESULT' && !lastResult.success) {
+                bodyRoot.className = 'bg-neutral-900 flex flex-col items-center justify-center font-sans select-none animate-electric-bg dynamic-screen';
+                container.className = 'max-w-md w-full h-full max-h-[90dvh] overflow-y-auto rounded-3xl shadow-2xl p-6 sm:p-8 border relative bg-black/90 border-yellow-500 shadow-yellow-500/50 animate-shake flex flex-col justify-center';
+            } else {
+                bodyRoot.className = 'bg-neutral-900 text-white flex flex-col items-center justify-center font-sans select-none body-electric-bg dynamic-screen';
+                container.className = 'max-w-md w-full h-full max-h-[90dvh] overflow-y-auto rounded-3xl shadow-2xl p-6 sm:p-8 border relative transition-colors bg-neutral-800 border-neutral-700 flex flex-col justify-center';
+            }
+
+            let html = '';
+
+            if (gameState !== 'START' && gameState !== 'GAME_OVER') {
+                html += `
+                <div class="flex justify-between items-start mb-6 border-b border-neutral-700 pb-4">
+                    <!-- 左側プレイヤー -->
+                    <div class="p-2 rounded-lg text-center min-w-[100px] ${setterIndex === 0 ? 'bg-red-900/40 text-red-400' : 'bg-blue-900/40 text-blue-400'}">
+                        <span class="text-[10px] block uppercase opacity-70">${setterIndex === 0 ? 'Setter' : 'Sitter'}</span>
+                        <span class="font-bold text-sm block truncate max-w-[80px] mx-auto">${players[0].name}</span>
+                        <div class="text-base font-mono font-bold mt-0.5">${players[0].score} pts</div>
+                        ${renderOuts(players[0].outs)}
+                    </div>
+                    
+                    <div class="text-center pt-2">
+                        <span class="text-[10px] block opacity-70 uppercase tracking-tighter">Remaining</span>
+                        <span class="text-lg font-mono">${availableChairs.length}</span>
+                    </div>
+                    
+                    <!-- 右側プレイヤー -->
+                    <div class="p-2 rounded-lg text-center min-w-[100px] ${sitterIndex === 0 ? 'bg-red-900/40 text-red-400' : 'bg-blue-900/40 text-blue-400'}">
+                        <span class="text-[10px] block uppercase opacity-70">${sitterIndex === 0 ? 'Setter' : 'Sitter'}</span>
+                        <span class="font-bold text-sm block truncate max-w-[80px] mx-auto">${players[1].name}</span>
+                        <div class="text-base font-mono font-bold mt-0.5">${players[1].score} pts</div>
+                        ${renderOuts(players[1].outs)}
+                    </div>
+                </div>`;
+            }
+
+            switch(gameState) {
+                case 'START':
+                    html = `
+                    <div class="text-center py-4">
+                        <div class="mb-4 flex justify-center">
+                            <div class="bg-yellow-500 p-4 rounded-full animate-pulse shadow-[0_0_30px_rgba(234,179,8,0.5)]">
+                                ${icons.zapLarge('text-neutral-900 fill-neutral-900')}
+                            </div>
+                        </div>
+                        <p class="text-neutral-400 text-xs sm:text-sm mb-1 uppercase tracking-tighter">水曜日のダウンタウンでおなじみの</p>
+                        <h1 class="text-4xl font-black mb-6 tracking-tighter italic text-yellow-500 leading-none">電気イスゲーム</h1>
+                        
+                        <div class="space-y-3 mb-8 text-left max-w-[280px] mx-auto">
+                            <div>
+                                <label class="text-[10px] text-neutral-500 uppercase font-bold ml-1">Player 1 Name</label>
+                                <input type="text" id="p1-name" placeholder="プレイヤー1" maxlength="10"
+                                    class="w-full bg-neutral-900 border border-neutral-700 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-red-500 transition-colors">
+                            </div>
+                            <div>
+                                <label class="text-[10px] text-neutral-500 uppercase font-bold ml-1">Player 2 Name</label>
+                                <input type="text" id="p2-name" placeholder="プレイヤー2" maxlength="10"
+                                    class="w-full bg-neutral-900 border border-neutral-700 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-blue-500 transition-colors">
+                            </div>
+                        </div>
+
+                        <p class="text-neutral-400 mb-6 text-sm">3アウトで即終了、もしくは<br><span class="text-white font-bold">${WINNING_SCORE}点先取</span>で勝利</p>
+                        <button onclick="startGame()" class="w-full sm:w-auto px-12 py-4 font-bold text-white bg-red-600 rounded-xl hover:bg-red-500 transition-all shadow-lg active:scale-95">GAME START</button>
+                    </div>`;
+                    break;
+
+                case 'SETTER_TURN':
+                    html += `
+                    <div class="text-center">
+                        <h2 class="text-xl font-bold mb-1 text-red-500 underline underline-offset-4 decoration-2">仕掛ける側：${players[setterIndex].name}</h2>
+                        <p class="text-[10px] text-neutral-400 mb-6">電流を流す椅子を1つ選んでください</p>
+                        <div class="flex justify-center">
+                            <div class="chair-container">
+                                ${[1,2,3,4,5,6,7,8,9,10,11,12].map(num => {
+                                    const isAvailable = availableChairs.includes(num);
+                                    const isSelected = selectedTrap === num;
+                                    return `<button onclick="setTrap(${num})" ${!isAvailable ? 'disabled' : ''} style="${getChairStyle(num)}" 
+                                        class="chair ${!isAvailable ? 'border-neutral-700 bg-neutral-900 text-neutral-700 cursor-not-allowed' : 
+                                        isSelected ? 'border-red-500 bg-red-600 text-white scale-125 z-10 shadow-lg shadow-red-500/50' : 'border-neutral-600 hover:border-red-400 text-neutral-400'} active:scale-110">
+                                        ${num}
+                                    </button>`;
+                                }).join('')}
+                                <div class="text-neutral-600 opacity-20">${icons.zapLarge('')}</div>
+                            </div>
+                        </div>
+                        <button onclick="if(selectedTrap){gameState='SITTER_TURN'; render();}" ${!selectedTrap ? 'disabled' : ''} 
+                            class="mt-6 w-full py-4 rounded-xl font-bold transition-all ${selectedTrap ? 'bg-white text-black hover:bg-neutral-200 shadow-lg active:scale-95' : 'bg-neutral-700 text-neutral-500'}">
+                            決定して交代
+                        </button>
+                    </div>`;
+                    break;
+
+                case 'SITTER_TURN':
+                    html += `
+                    <div class="text-center">
+                        <h2 class="text-xl font-bold mb-1 text-blue-400 underline underline-offset-4 decoration-2">座る側：${players[sitterIndex].name}</h2>
+                        <p class="text-[10px] text-neutral-400 mb-6">どの椅子に座りますか？</p>
+                        <div class="flex justify-center">
+                            <div class="chair-container">
+                                ${[1,2,3,4,5,6,7,8,9,10,11,12].map(num => {
+                                    const isAvailable = availableChairs.includes(num);
+                                    const isSelected = selectedSit === num;
+                                    return `<button onclick="selectSit(${num})" ${!isAvailable ? 'disabled' : ''} style="${getChairStyle(num)}" 
+                                        class="chair ${!isAvailable ? 'border-neutral-700 bg-neutral-900 text-neutral-700 cursor-not-allowed' : 
+                                        isSelected ? 'border-blue-500 bg-blue-600 text-white scale-125 z-10 shadow-lg shadow-blue-500/50' : 'border-neutral-600 hover:border-red-400 text-neutral-400'} active:scale-110">
+                                        ${num}
+                                    </button>`;
+                                }).join('')}
+                                <div class="text-neutral-600 opacity-20">${icons.user()}</div>
+                            </div>
+                        </div>
+                        <button onclick="if(selectedSit){judge();}" ${!selectedSit ? 'disabled' : ''} 
+                            class="mt-6 w-full py-4 rounded-xl font-black text-xl transition-all ${selectedSit ? 'bg-red-600 text-white hover:bg-red-500 animate-pulse shadow-xl shadow-red-600/50 active:scale-95' : 'bg-neutral-700 text-neutral-500'}">
+                            ファイナルアンサー？
+                        </button>
+                    </div>`;
+                    break;
+
+                case 'RESULT':
+                    if (lastResult.success) {
+                        html += `
+                        <div class="text-center">
+                            <h2 class="text-xl font-bold mb-1 text-green-400">判定：SAFE</h2>
+                            <p class="text-[10px] text-neutral-400 mb-6">${lastResult.hitNum}番に電流は流れていませんでした</p>
+                            
+                            <div class="flex justify-center">
+                                <div class="chair-container">
+                                    ${[1,2,3,4,5,6,7,8,9,10,11,12].map(num => {
+                                        const isAvailable = availableChairs.includes(num) || num === lastResult.hitNum;
+                                        const isSit = lastResult.hitNum === num;
+                                        const isTrap = selectedTrap === num;
+                                        
+                                        let extraClasses = 'border-neutral-700 bg-neutral-900 text-neutral-700';
+                                        if (isSit) extraClasses = 'border-blue-500 bg-blue-600 text-white scale-110 z-10';
+                                        if (isTrap) extraClasses = 'animate-glow-red text-red-500 scale-110 z-20';
+
+                                        return `<div style="${getChairStyle(num)}" class="chair ${extraClasses}">${num}</div>`;
+                                    }).join('')}
+                                    <div class="text-green-400 font-black text-4xl italic tracking-tighter">SAFE</div>
+                                </div>
+                            </div>
+                            
+                            <div class="mt-6 bg-neutral-900/50 p-4 rounded-xl mb-4 border border-green-500/30">
+                                <p class="text-green-400 font-bold">${lastResult.points} ポイント獲得！</p>
+                            </div>
+                            
+                            <button onclick="checkGameOver()" class="w-full py-4 rounded-xl bg-white text-black font-bold hover:bg-neutral-200 transition-colors shadow-lg active:scale-95">次へ</button>
+                        </div>`;
+                    } else {
+                        html += `
+                        <div class="text-center py-4">
+                            <div class="mb-6 flex justify-center">
+                                <div class="bg-yellow-400 p-6 rounded-full animate-electric shadow-[0_0_50px_rgba(250,204,21,1)]">${icons.zapLarge('text-black fill-black')}</div>
+                            </div>
+                            <h2 class="text-6xl font-black mb-4 italic tracking-widest text-yellow-400 animate-bounce">OUT</h2>
+                            <p class="text-lg mb-2 text-white">選択した番号: <span class="text-3xl font-bold">${lastResult.hitNum}</span></p>
+                            <div class="bg-black/50 p-4 rounded-xl mb-6 border border-neutral-700 backdrop-blur-sm">
+                                <div class="space-y-1"><p class="text-red-500 font-black text-xl tracking-tighter">⚡⚡⚡ 電流 ⚡⚡⚡</p><p class="text-white text-[10px]">全ポイント没収 ＆ 1アウト追加</p></div>
+                            </div>
+                            <p class="text-neutral-500 text-[10px] animate-pulse">3秒後にスコアボードへ移動します...</p>
+                        </div>`;
+                    }
+                    break;
+
+                case 'SCOREBOARD':
+                    html += `
+                    <div class="text-center">
+                        <h2 class="text-2xl font-black mb-6 text-yellow-500 italic tracking-widest">SCORE BOARD</h2>
+                        <div class="space-y-4 mb-8">
+                            ${players.map((p, idx) => `
+                                <div class="flex justify-between items-center p-4 rounded-xl border-2 transition-opacity ${idx === setterIndex ? 'border-neutral-700 opacity-40' : 'border-neutral-500 bg-neutral-900/80 shadow-inner'}">
+                                    <div class="text-left">
+                                        <span class="font-bold text-lg block truncate max-w-[120px]">${p.name}</span>
+                                        ${renderOuts(p.outs)}
+                                    </div>
+                                    <div class="text-right">
+                                        <div class="text-[10px] text-neutral-500 uppercase">Score</div>
+                                        <span class="text-2xl font-mono font-bold text-white">${p.score} <span class="text-xs">/ ${WINNING_SCORE}</span></span>
+                                    </div>
+                                </div>
+                            `).join('')}
+                        </div>
+                        <button onclick="nextTurn()" class="w-full py-4 rounded-xl bg-red-600 text-white font-bold hover:bg-red-500 transition-all flex items-center justify-center gap-2 shadow-lg shadow-red-600/30 active:scale-95">
+                            役割を交代して開始 ${icons.rotate()}
+                        </button>
+                    </div>`;
+                    break;
+
+                case 'GAME_OVER':
+                    let winnerName = 'DRAW';
+                    const p1 = players[0];
+                    const p2 = players[1];
+
+                    if (p1.outs >= 3) {
+                        winnerName = p2.name;
+                    } else if (p2.outs >= 3) {
+                        winnerName = p1.name;
+                    } else if (p1.score >= WINNING_SCORE) {
+                        winnerName = p1.name;
+                    } else if (p2.score >= WINNING_SCORE) {
+                        winnerName = p2.name;
+                    } else {
+                        winnerName = p1.score > p2.score ? p1.name : (p2.score > p1.score ? p2.name : 'DRAW');
+                    }
+
+                    html = `
+                    <div class="text-center py-4">
+                        <h2 class="text-3xl font-black mb-6 text-yellow-500 italic">GAME OVER</h2>
+                        <div class="space-y-4 mb-8">
+                            ${players.map(p => `
+                                <div class="flex justify-between items-center p-4 rounded-xl bg-neutral-900 border ${p.outs >= 3 ? 'border-red-600 opacity-60' : 'border-neutral-700'}">
+                                    <div class="text-left">
+                                        <span class="font-bold block truncate max-w-[120px]">${p.name}</span>
+                                        ${renderOuts(p.outs)}
+                                    </div>
+                                    <span class="text-2xl font-mono font-bold text-white">${p.score} pts</span>
+                                </div>
+                            `).join('')}
+                        </div>
+                        <div class="p-6 bg-yellow-500 p-1 rounded-2xl mb-8 shadow-[0_0_40px_rgba(234,179,8,0.3)]">
+                            <div class="bg-neutral-900 rounded-xl py-4 px-2">
+                                <p class="text-yellow-500 text-xs mb-1 uppercase tracking-[0.3em]">Winner</p>
+                                <h3 class="text-3xl font-black text-white truncate px-2">${winnerName}</h3>
+                            </div>
+                        </div>
+                        <button onclick="resetGame()" class="w-full py-4 rounded-xl bg-white text-black font-bold hover:bg-neutral-200 transition-colors active:scale-95">リベンジマッチ</button>
+                    </div>`;
+                    break;
+            }
+
+            container.innerHTML = html;
+        }
+
+        function checkGameOver() {
+            if (autoTransitionTimer) clearTimeout(autoTransitionTimer);
+            const isAnyPlayerDefeated = players.some(p => p.outs >= 3);
+            const isAnyPlayerWonByScore = players.some(p => p.score >= WINNING_SCORE);
+            
+            if (isAnyPlayerDefeated || isAnyPlayerWonByScore || availableChairs.length === 0) {
+                gameState = 'GAME_OVER';
+            } else {
+                gameState = 'SCOREBOARD';
+            }
+            render();
+        }
+
+        function nextTurn() {
+            setterIndex = 1 - setterIndex;
+            selectedTrap = null;
+            selectedSit = null;
+            lastResult = null;
+            gameState = 'SETTER_TURN';
+            render();
+        }
+
+        function resetGame() {
+            players = [
+                { id: 1, name: 'プレイヤー1', score: 0, outs: 0 },
+                { id: 2, name: 'プレイヤー2', score: 0, outs: 0 },
+            ];
+            availableChairs = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12];
+            setterIndex = 0;
+            selectedTrap = null;
+            selectedSit = null;
+            gameState = 'START';
+            render();
+        }
+
+        render();
+    </script>
 </body>
 </html>
